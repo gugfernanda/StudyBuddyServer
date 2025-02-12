@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/todo_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update  # Va actualiza tabelele existente, adăugând câmpuri noi dacă e nevoie
+    properties:
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+      hibernate.show_sql: true
+      hibernate.format_sql: true  # Acesta va formata SQL-ul pentru a fi mai ușor de citit
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate: DEBUG
