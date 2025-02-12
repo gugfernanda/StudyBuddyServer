@@ -12,6 +12,7 @@ import com.example.studybuddy.service.UserService;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173") // allow requests from frontend
 @RestController
 @RequestMapping("/users")
 public class UserController {
