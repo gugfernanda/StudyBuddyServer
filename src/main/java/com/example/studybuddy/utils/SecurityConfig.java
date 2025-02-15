@@ -15,9 +15,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain (HttpSecurity http) throws Exception {
         http
+                .requiresChannel(channel ->  channel
+                        .anyRequest().requiresSecure())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/users").permitAll()
+                        .requestMatchers("/auth/login", "/users", "/users/**").permitAll()
+                        .requestMatchers("users/delete/**").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();
