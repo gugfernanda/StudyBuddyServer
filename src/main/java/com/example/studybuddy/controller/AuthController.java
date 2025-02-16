@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://localhost:5173", allowCredentials = "true")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -89,6 +89,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRequestDTO userRequestDTO) {
+
+        //System.out.println("✅ Request received at /auth/register: " + userRequestDTO);
+
         if(userRepository.findByEmail(userRequestDTO.getEmail()).isPresent() ||
                 userRepository.findByUsername(userRequestDTO.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body("Email or username already in use");

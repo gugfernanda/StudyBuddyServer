@@ -13,7 +13,7 @@ public class UserRequestDTO {
     @JsonProperty("username")
     private String username;
 
-    @JsonProperty("full_name")
+    @JsonProperty("fullName")
     private String fullName;
 
     @JsonProperty("email")
@@ -37,4 +37,5 @@ public class UserRequestDTO {
     public String getFullName() {
         return fullName;
     }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 }
