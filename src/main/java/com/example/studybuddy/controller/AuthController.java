@@ -19,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +44,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequest, HttpServletRequest request) {
         try {
-            // Autentificăm utilizatorul folosind Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmailOrUsername(),
@@ -50,14 +51,12 @@ public class AuthController {
                     )
             );
 
-            // Obținem detaliile utilizatorului autentificat
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-            // Creăm sesiunea pentru user-ul logat
+
             HttpSession session = request.getSession();
             session.setAttribute("user", userDetails.getUsername());
 
-            // Returnăm un JSON cu mesajul de succes și username-ul utilizatorului
             return ResponseEntity.ok(Map.of(
                     "message", "User logged in successfully",
                     "username", userDetails.getUsername()
@@ -97,6 +96,25 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Email or username already in use");
         }
 
+        List<String> errors = new ArrayList<>();
+
+        if(userRequestDTO.getPassword().length() < 8) {
+            errors.add("Password must be at least 9 characters long");
+        }
+        if(!userRequestDTO.getPassword().matches(".*[A-Z].*")) {
+            errors.add("Password must contain at least one uppercase letter");
+        }
+        if(!userRequestDTO.getPassword().matches(".*\\d.*")) {
+            errors.add("Password must contain at least one digit");
+        }
+        if(!userRequestDTO.getPassword().matches(".*[@$!%*?&].*")) {
+            errors.add("Password must contain at least one special character");
+        }
+
+        if(!errors.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", errors.get(0)));
+        }
+
         User newUser = new User();
         newUser.setUsername(userRequestDTO.getUsername());
         newUser.setFullName(userRequestDTO.getFullName());
@@ -105,5 +123,6 @@ public class AuthController {
 
         userRepository.save(newUser);
         return ResponseEntity.ok("User registered successfully");
+
     }
 }
