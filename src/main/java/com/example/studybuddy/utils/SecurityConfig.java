@@ -34,11 +34,12 @@ public class SecurityConfig {
                         //.anyRequest().requiresSecure())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/logout", "/auth/current-user", "/users", "/users/**").permitAll()
-                        .requestMatchers("users/delete/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                //.authorizeHttpRequests(auth -> auth
+                       // .requestMatchers("/auth/login", "/auth/register", "/auth/logout", "/auth/current-user", "/users", "/users/**").permitAll()
+                       // .requestMatchers("users/delete/**").permitAll()
+                       // .requestMatchers("/tasks/create", "/tasks/update", "/tasks/delete/**").permitAll()
+                       // .anyRequest().authenticated()
+               // )
                 .sessionManagement(session -> session
                         .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)
