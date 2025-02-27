@@ -6,11 +6,14 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update  # Va actualiza tabelele existente, adăugând câmpuri noi dacă e nevoie
+      ddl-auto: update
     properties:
-      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
-      hibernate.show_sql: true
-      hibernate.format_sql: true  # Acesta va formata SQL-ul pentru a fi mai ușor de citit
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+        format_sql: true
+  session:
+    store-type: jdbc
 
 server:
   port: 8080
@@ -22,7 +25,24 @@ server:
     key-alias: studybuddy
     key-password: ${KEYSTORE_PASSWORD}
 
+
+servlet:
+  session:
+    cookie:
+      http-only: true
+      secure: false
+      same-site: None
+      name: JSESSIONID
+
 logging:
   level:
     org.springframework.web: DEBUG
     org.hibernate: DEBUG
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+

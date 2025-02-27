@@ -83,7 +83,9 @@ public class AuthController {
         if(session == null || session.getAttribute("user") == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No user is logged in");
         }
-        return ResponseEntity.ok("Logged in as: " + session.getAttribute("user"));
+
+        String username = session.getAttribute("user").toString();
+        return ResponseEntity.ok(Map.of("username", username));
     }
 
     @PostMapping("/register")

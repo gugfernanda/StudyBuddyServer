@@ -59,7 +59,7 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
-                            System.out.println("🚨 Unauthorized request to: " + request.getRequestURI());
+                            System.out.println("Unauthorized request to: " + request.getRequestURI());
                             response.setContentType("application/json");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");
@@ -84,6 +84,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+        configuration.setExposedHeaders(List.of("Set-Cookie"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

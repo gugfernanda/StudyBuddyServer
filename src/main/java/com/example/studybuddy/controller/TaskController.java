@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tasks")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class TaskController {
 
     private final TaskService taskService;
@@ -48,9 +48,10 @@ public class TaskController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<TaskResponseDTO>> getUserTasks(@PathVariable Long userId) {
-        Optional<User> userOptional = userRepository.findById(userId);
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<TaskResponseDTO>> getUserTasks(@PathVariable String username) {
+
+        Optional<User> userOptional = userRepository.findByUsername(username);
         if(userOptional.isEmpty()) {
             return ResponseEntity.badRequest().body(null);
         }
