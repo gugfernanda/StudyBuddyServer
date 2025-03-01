@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,13 +35,15 @@ public class TaskController {
     @PostMapping("/create")
     public ResponseEntity<?> createTask(@RequestBody TaskRequestDTO taskRequestDTO) {
 
-        Optional<User> userOptional = userRepository.findById(taskRequestDTO.getUser_id());
-        if(userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+        Optional<User> userOptional = userRepository.findByUsername(taskRequestDTO.getUsername());
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
         }
 
+        User user = userOptional.get();
         Task task = modelMapper.map(taskRequestDTO, Task.class);
-        task.setUser(userOptional.get());
+        task.setUser(user);
 
         Task savedTask = taskService.createTask(task);
         TaskResponseDTO responseDTO = modelMapper.map(savedTask, TaskResponseDTO.class);

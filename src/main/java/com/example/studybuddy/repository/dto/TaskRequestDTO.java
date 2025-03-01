@@ -17,6 +17,9 @@ public class TaskRequestDTO {
     @JsonProperty("user_id")
     private Long user_id;
 
+    @JsonProperty("username")
+    private String username;
+
     @JsonProperty("category_id")
     private Long category_id;
 
@@ -50,6 +53,14 @@ public class TaskRequestDTO {
 
     public void setCategory_id(Long category_id) {
         this.category_id = category_id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }
 
