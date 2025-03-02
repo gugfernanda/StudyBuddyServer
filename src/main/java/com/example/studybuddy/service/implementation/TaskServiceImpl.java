@@ -5,9 +5,13 @@ import com.example.studybuddy.repository.entity.Task;
 import com.example.studybuddy.repository.entity.TaskState;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.TaskService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -47,6 +51,29 @@ public class TaskServiceImpl implements TaskService {
 
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    @Override
+    public ResponseEntity<?> updateTaskState(Long taskId, String newState) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        if(!List.of("TO_DO", "IN_PROGRESS", "DONE").contains(newState)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid task state");
+        }
+
+        task.setState(TaskState.valueOf(newState));
+        taskRepository.save(task);
+
+        return ResponseEntity.ok(Map.of("message", "Task updated successfully"));
+    }
+
+    @Override
+    public int deleteCompletedTasks() {
+        List<Task> completedTasks = taskRepository.findByState(TaskState.DONE);
+        int count = completedTasks.size();
+        taskRepository.deleteAll(completedTasks);
+        return count;
     }
 
 

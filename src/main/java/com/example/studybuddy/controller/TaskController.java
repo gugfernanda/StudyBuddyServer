@@ -4,6 +4,7 @@ package com.example.studybuddy.controller;
 import com.example.studybuddy.repository.UserRepository;
 import com.example.studybuddy.repository.dto.TaskRequestDTO;
 import com.example.studybuddy.repository.dto.TaskResponseDTO;
+import com.example.studybuddy.repository.dto.TaskUpdateDTO;
 import com.example.studybuddy.repository.entity.Task;
 import com.example.studybuddy.repository.entity.TaskState;
 import com.example.studybuddy.repository.entity.User;
@@ -111,6 +112,17 @@ public class TaskController {
 
         taskService.deleteTask(taskId);
         return ResponseEntity.ok("Task deleted successfully");
+    }
+
+    @PutMapping("/update-state/{taskId}")
+    public ResponseEntity<?> updateTaskState(@PathVariable Long taskId, @RequestBody TaskUpdateDTO request) {
+        return taskService.updateTaskState(taskId, request.getState());
+    }
+
+    @DeleteMapping("/delete-completed")
+    public ResponseEntity<?> clearCompletedTask() {
+        int deletedCount = taskService.deleteCompletedTasks();
+        return ResponseEntity.ok(Map.of("message", "Deleted " + deletedCount + " completed tasks"));
     }
 
 }
