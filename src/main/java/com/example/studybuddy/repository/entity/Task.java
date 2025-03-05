@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Optional;
+import java.time.LocalDate;
 
 @Setter
 @Getter
@@ -31,6 +31,9 @@ public class Task {
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true)
     private Category category;
+
+    @Column(name = "deadline")
+    private LocalDate deadline;
 
     public Long getId() {
         return id;
@@ -70,5 +73,13 @@ public class Task {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 }

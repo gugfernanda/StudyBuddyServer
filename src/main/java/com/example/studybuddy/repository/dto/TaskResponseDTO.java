@@ -1,9 +1,12 @@
 package com.example.studybuddy.repository.dto;
 
 import com.example.studybuddy.repository.entity.TaskState;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -23,6 +26,10 @@ public class TaskResponseDTO {
 
     @JsonProperty("category_id")
     private Long category_id;
+
+    @JsonProperty("deadline")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate deadline;
 
     public Long getId() {
         return id;
@@ -60,7 +67,16 @@ public class TaskResponseDTO {
         return category_id;
     }
 
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
+    }
+
     public void setCategory_id(Long category_id) {
         this.category_id = category_id;
     }
+
 }

@@ -1,9 +1,12 @@
 package com.example.studybuddy.repository.dto;
 
 import com.example.studybuddy.repository.entity.TaskState;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -22,6 +25,10 @@ public class TaskRequestDTO {
 
     @JsonProperty("category_id")
     private Long category_id;
+
+    @JsonProperty("deadline")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate deadline;
 
     public String getText() {
         return text;
@@ -61,6 +68,14 @@ public class TaskRequestDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 }
 

@@ -45,7 +45,7 @@ public class TaskController {
         User user = userOptional.get();
         Task task = modelMapper.map(taskRequestDTO, Task.class);
         task.setUser(user);
-
+        //task.setDeadline(taskRequestDTO.getDeadline());
         Task savedTask = taskService.createTask(task);
         TaskResponseDTO responseDTO = modelMapper.map(savedTask, TaskResponseDTO.class);
 
