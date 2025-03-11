@@ -9,8 +9,6 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
 @Entity
 @Table(name = "users")
 public class User {
@@ -41,6 +39,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Category> categories = new ArrayList<>();
+
+    @Column(name = "reset_token")
+    private String resetToken;
 
     @Override
     public String toString() {
@@ -91,4 +92,13 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public String getResetToken() {
+        return resetToken;
+    }
+
+    public void setResetToken(String resetToken) {
+        this.resetToken = resetToken;
+    }
+
 }

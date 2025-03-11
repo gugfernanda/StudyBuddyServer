@@ -6,6 +6,7 @@ import com.example.studybuddy.repository.dto.LoginRequestDTO;
 import com.example.studybuddy.repository.dto.UserRequestDTO;
 import com.example.studybuddy.repository.dto.UserResponseDTO;
 import com.example.studybuddy.repository.entity.User;
+import com.example.studybuddy.service.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.apache.coyote.Response;
@@ -19,10 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import javax.swing.text.html.Option;
+import java.util.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -33,12 +32,14 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, ModelMapper modelMapper, AuthenticationManager authenticationManager) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, ModelMapper modelMapper, AuthenticationManager authenticationManager, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.authenticationManager = authenticationManager;
+        this.emailService = emailService;
     }
 
     @PostMapping("/login")
@@ -126,5 +127,46 @@ public class AuthController {
         userRepository.save(newUser);
         return ResponseEntity.ok("User registered successfully");
 
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if(userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found");
+        }
+
+        User user = userOptional.get();
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        userRepository.save(user);
+
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+
+        emailService.sendResetEmail(email, resetLink);
+        System.out.println("Email sent successfully!");
+
+        return ResponseEntity.ok(Map.of("message", "Reset link sent to email"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+
+        Optional<User> userOptional = userRepository.findByResetToken(token);
+
+        if(userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
+        }
+
+        User user = userOptional.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 }
