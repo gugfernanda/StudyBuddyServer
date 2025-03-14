@@ -139,27 +139,40 @@ public class AuthController {
         }
 
         User user = userOptional.get();
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
+        //String token = UUID.randomUUID().toString();
+        String verificationCode = String.format("%06d", new Random().nextInt(999999));
+        user.setResetToken(verificationCode);
         userRepository.save(user);
 
-        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        emailService.sendVerificationCode(user.getEmail(), verificationCode);
 
-        emailService.sendResetEmail(email, resetLink);
         System.out.println("Email sent successfully!");
 
-        return ResponseEntity.ok(Map.of("message", "Reset link sent to email"));
+        return ResponseEntity.ok(Map.of("message", "Verification code sent to email"));
+    }
+
+    @PostMapping("/verify-code")
+    public ResponseEntity<?> verifyCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if(userOptional.isEmpty() || !userOptional.get().getResetToken().equals(code)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid verification code"));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Code verified successfully"));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
-        String newPassword = request.get("password");
+        String email = request.get("email");
+        String newPassword = request.get("newPassword");
 
-        Optional<User> userOptional = userRepository.findByResetToken(token);
+        Optional<User> userOptional = userRepository.findByEmail(email);
 
         if(userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
         User user = userOptional.get();

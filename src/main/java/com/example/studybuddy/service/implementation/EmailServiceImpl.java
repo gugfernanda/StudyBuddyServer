@@ -15,11 +15,12 @@ public class EmailServiceImpl implements EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendResetEmail(String to, String resetLink) {
+    @Override
+    public void sendVerificationCode(String to, String verificationCode) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
-        message.setSubject("Reset Your Password");
-        message.setText("Click the following link to reset your password: " + resetLink);
+        message.setSubject("Study Buddy - Reset Password");
+        message.setText("Use the following code to reset your password: " + verificationCode);
         mailSender.send(message);
     }
 }
