@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.swing.text.html.Option;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -139,9 +140,11 @@ public class AuthController {
         }
 
         User user = userOptional.get();
-        //String token = UUID.randomUUID().toString();
         String verificationCode = String.format("%06d", new Random().nextInt(999999));
+
         user.setResetToken(verificationCode);
+        user.setResetTokenExpiration(LocalDateTime.now().plusMinutes(10));
+
         userRepository.save(user);
 
         emailService.sendVerificationCode(user.getEmail(), verificationCode);
@@ -161,6 +164,16 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid verification code"));
         }
 
+        User user = userOptional.get();
+
+        if (user.getResetToken() == null || !user.getResetToken().equals(code)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid verification code"));
+        }
+
+        if (user.getResetTokenExpiration().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Verification code expired"));
+        }
+
         return ResponseEntity.ok(Map.of("message", "Code verified successfully"));
     }
 
@@ -178,6 +191,7 @@ public class AuthController {
         User user = userOptional.get();
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetToken(null);
+        user.setResetTokenExpiration(null);
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
