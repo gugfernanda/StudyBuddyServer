@@ -19,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
@@ -88,6 +89,14 @@ public class AuthController {
 
         String username = session.getAttribute("user").toString();
         return ResponseEntity.ok(Map.of("username", username));
+    }
+
+    @GetMapping("/user-by-username")
+    public ResponseEntity<UserResponseDTO> getUserByUsername(@RequestParam String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        return ResponseEntity.ok(new UserResponseDTO(user));
     }
 
     @PostMapping("/register")

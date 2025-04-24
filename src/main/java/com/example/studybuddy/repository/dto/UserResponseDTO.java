@@ -1,11 +1,11 @@
 package com.example.studybuddy.repository.dto;
 
+import com.example.studybuddy.repository.entity.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 @ToString
 public class UserResponseDTO {
@@ -21,6 +21,22 @@ public class UserResponseDTO {
 
     @JsonProperty("email")
     private String email;
+
+    
+
+    public UserResponseDTO(Long id, String username, String fullName, String email) {
+        this.id = id;
+        this.username = username;
+        this.fullName = fullName;
+        this.email = email;
+    }
+
+    public UserResponseDTO(User user) {
+        this.id = user.getId();
+        this.username = user.getUsername();
+        this.fullName = user.getFullName();
+        this.email = user.getEmail();
+    }
 
     public Long getId() {
         return id;

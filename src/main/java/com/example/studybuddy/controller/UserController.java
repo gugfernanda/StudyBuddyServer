@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.UserService;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
