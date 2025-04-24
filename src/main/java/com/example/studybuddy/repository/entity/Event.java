@@ -21,6 +21,41 @@ public class Event {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(name = "imported")
+    private boolean imported;
+
+    @Column(name = "schedule_label")
+    private String scheduleLabel;
+
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public boolean isImported() {
+        return imported;
+    }
+
+    public void setImported(boolean imported) {
+        this.imported = imported;
+    }
+
+    public String getScheduleLabel() {
+        return scheduleLabel;
+    }
+
+    public void setScheduleLabel(String scheduleLabel) {
+        this.scheduleLabel = scheduleLabel;
+    }
+
     public Event() { }
 
     public Long getId() {
@@ -51,17 +86,6 @@ public class Event {
         return startTime;
     }
 
-    public void setStart(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEnd(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
 
     public User getUser() {
         return user;

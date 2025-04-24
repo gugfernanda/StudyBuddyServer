@@ -48,8 +48,10 @@ public class EventServiceImpl implements EventService {
         Event event = new Event();
         event.setTitle(requestDTO.getTitle());
         event.setDescription(requestDTO.getDescription());
-        event.setStart(requestDTO.getStartTime());
-        event.setEnd(requestDTO.getEndTime());
+        event.setStartTime(requestDTO.getStartTime());
+        event.setEndTime(requestDTO.getEndTime());
+        event.setScheduleLabel(null);
+        event.setImported(false);
         event.setUser(user);
 
         Event savedEvent = eventRepository.save(event);
@@ -70,8 +72,8 @@ public class EventServiceImpl implements EventService {
 
         event.setTitle(requestDTO.getTitle());
         event.setDescription(requestDTO.getDescription());
-        event.setStart(requestDTO.getStartTime());
-        event.setEnd(requestDTO.getEndTime());
+        event.setStartTime(requestDTO.getStartTime());
+        event.setEndTime(requestDTO.getEndTime());
 
         Event updatedEvent = eventRepository.save(event);
 
