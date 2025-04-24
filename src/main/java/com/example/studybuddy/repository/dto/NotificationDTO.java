@@ -1,28 +1,20 @@
-package com.example.studybuddy.repository.entity;
-
-import jakarta.persistence.*;
+package com.example.studybuddy.repository.dto;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "notifications")
-public class Notification {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class NotificationDTO {
     private Long id;
-
     private String message;
     private boolean read;
     private LocalDateTime createdAt;
+    private String username;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    public Notification() {
-        this.read = false;
-        this.createdAt = LocalDateTime.now();
+    public NotificationDTO(Long id, String message, boolean read, LocalDateTime createdAt, String username) {
+        this.id = id;
+        this.message = message;
+        this.read = read;
+        this.createdAt = createdAt;
+        this.username = username;
     }
 
     public Long getId() {
@@ -57,11 +49,11 @@ public class Notification {
         this.createdAt = createdAt;
     }
 
-    public User getUser() {
-        return user;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

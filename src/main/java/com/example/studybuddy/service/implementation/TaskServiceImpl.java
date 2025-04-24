@@ -4,6 +4,7 @@ import com.example.studybuddy.repository.TaskRepository;
 import com.example.studybuddy.repository.entity.Task;
 import com.example.studybuddy.repository.entity.TaskState;
 import com.example.studybuddy.repository.entity.User;
+import com.example.studybuddy.service.NotificationService;
 import com.example.studybuddy.service.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,11 @@ import java.util.Optional;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final NotificationService notificationService;
 
-    public TaskServiceImpl(TaskRepository taskRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository, NotificationService notificationService) {
         this.taskRepository = taskRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -64,6 +67,10 @@ public class TaskServiceImpl implements TaskService {
 
         task.setState(TaskState.valueOf(newState));
         taskRepository.save(task);
+
+        if (newState.equals("DONE")) {
+            notificationService.createNotification(task.getUser(), "Great job! You completed \"" + task.getText() + "\".");
+        }
 
         return ResponseEntity.ok(Map.of("message", "Task updated successfully"));
     }
