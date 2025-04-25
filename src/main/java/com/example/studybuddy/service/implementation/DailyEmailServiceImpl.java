@@ -39,6 +39,7 @@ public class DailyEmailServiceImpl implements DailyEmailService {
         this.notificationRepository = notificationRepository;
     }
 
+    @Transactional
     @Override
     public void sendDailySummary(User user) {
 

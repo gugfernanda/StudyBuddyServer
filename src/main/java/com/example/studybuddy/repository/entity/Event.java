@@ -22,7 +22,7 @@ public class Event {
     private User user;
 
     @Column(name = "imported")
-    private boolean imported;
+    private Boolean imported;
 
     @Column(name = "schedule_label")
     private String scheduleLabel;
