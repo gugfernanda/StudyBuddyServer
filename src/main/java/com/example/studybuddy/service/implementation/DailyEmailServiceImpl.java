@@ -10,15 +10,19 @@ import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.DailyEmailService;
 import com.example.studybuddy.service.NotificationService;
 import jakarta.transaction.Transactional;
+import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class DailyEmailServiceImpl implements DailyEmailService {
@@ -29,19 +33,30 @@ public class DailyEmailServiceImpl implements DailyEmailService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final NotificationRepository notificationRepository;
+    private final MessageSource messageSource;
 
-    public DailyEmailServiceImpl(TaskRepository taskRepository, EventRepository eventRepository, JavaMailSender mailSender, UserRepository userRepository, NotificationService notificationService, NotificationRepository notificationRepository) {
+    public DailyEmailServiceImpl(TaskRepository taskRepository, EventRepository eventRepository, JavaMailSender mailSender,
+                                 UserRepository userRepository, NotificationService notificationService, NotificationRepository notificationRepository, MessageSource messageSource) {
         this.taskRepository = taskRepository;
         this.eventRepository = eventRepository;
         this.mailSender = mailSender;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.notificationRepository = notificationRepository;
+        this.messageSource = messageSource;
     }
 
     @Transactional
     @Override
     public void sendDailySummary(User user) {
+
+        Locale locale = Locale.ENGLISH;
+        if(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
+            String langHeader = attrs.getRequest().getHeader("Accept-Language");
+            if(langHeader != null) {
+                locale = Locale.forLanguageTag(langHeader);
+            }
+        }
 
         LocalDateTime cutoff = LocalDateTime.now().minusDays(1);
         notificationRepository.deleteByCreatedAtBefore(cutoff);
@@ -60,58 +75,78 @@ public class DailyEmailServiceImpl implements DailyEmailService {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
         for (Task task : todayTasks) {
-            notificationService.createNotification(user, "Task \"" + task.getText() + "\" is due today.");
+            String message = messageSource.getMessage(
+                    "notification.task.today",
+                    new Object[]{task.getText()},
+                    locale
+            );
+            notificationService.createNotification(user, message);
         }
 
         for (Task task : tomorrowTasks) {
-            notificationService.createNotification(user, "Task \"" + task.getText() + "\" is due tomorrow.");
+            String message = messageSource.getMessage(
+                    "notification.task.tomorrow",
+                    new Object[]{task.getText()},
+                    locale
+            );
+            notificationService.createNotification(user, message);
         }
 
         for (Event event : todayEvents) {
             String time = event.getStartTime().format(timeFormatter);
-            notificationService.createNotification(user, "You have an event today: \"" + event.getTitle() + "\" at " + time + ".");
+            String message = messageSource.getMessage(
+                    "notification.event.today",
+                    new Object[]{event.getTitle(), time},
+                    locale
+            );
+            notificationService.createNotification(user, message);
         }
 
         StringBuilder content = new StringBuilder();
-        content.append("Good morning, ").append(user.getFullName()).append("!\n\n");
-        content.append("Events today:\n");
+
+        content.append(messageSource.getMessage("email.greeting", new Object[]{user.getFullName()}, locale)).append("\n\n");
+
+        content.append(messageSource.getMessage("email.events.title", null, locale)).append("\n");
 
         if(todayEvents.isEmpty()) {
-            content.append("No events today!\n");
+            content.append(messageSource.getMessage("email.events.none", null, locale)).append("\n");
         } else {
             for(Event event : todayEvents) {
-                content.append("- ")
-                        .append(event.getTitle())
-                        .append(" (")
-                        .append(event.getStartTime().toLocalTime())
-                        .append(" - ")
-                        .append(event.getEndTime().toLocalTime())
-                        .append(")\n");
+                content.append(messageSource.getMessage(
+                        "email.event.line",
+                        new Object[]{event.getTitle(), event.getStartTime().toLocalTime(),event.getEndTime().toLocalTime()},
+                        locale
+                )).append("\n");
                 if(event.getDescription() != null && !event.getDescription().isEmpty()) {
-                    content.append(" > ").append(event.getDescription()).append("\n");
+                    content.append(messageSource.getMessage(
+                            "email.event.description",
+                            new Object[]{event.getDescription()},
+                            locale
+                    )).append("\n");
                 }
             }
         }
 
-        content.append("\nTasks due today:\n");
+        content.append("\n").append(messageSource.getMessage("email.tasks.today.title", null, locale)).append("\n")   ;
         if(todayTasks.isEmpty()) {
-            content.append("No tasks today!\n");
+            content.append(messageSource.getMessage("email.tasks.today.none", null, locale)).append("\n");
         } else {
             for(Task task : todayTasks) {
-                content.append("- ").append(task.getText()).append("\n");
+                content.append(messageSource.getMessage("email.task.line", new Object[]{task.getText()}, locale)).append("\n");
             }
         }
 
-        content.append("\nTasks due tomorrow:\n");
+        content.append("\n").append(messageSource.getMessage("email.tasks.tomorrow.title", null, locale)).append("\n")   ;
+
         if(tomorrowTasks.isEmpty()) {
-            content.append("No tasks tomorrow!\n");
+            content.append(messageSource.getMessage("email.tasks.tomorrow.none", null, locale)).append("\n");
         } else {
             for(Task task : tomorrowTasks) {
-                content.append("- ").append(task.getText()).append("\n");
+                content.append(messageSource.getMessage("email.task.line", new Object[]{task.getText()}, locale)).append("\n");
             }
         }
 
-        content.append("\nHave a productive day!\n");
+        content.append("\n").append(messageSource.getMessage("email.footer", null, locale)).append("\n");
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
