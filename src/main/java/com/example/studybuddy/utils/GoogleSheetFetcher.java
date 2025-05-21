@@ -1,16 +1,29 @@
 package com.example.studybuddy.utils;
 
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class GoogleSheetUtil {
+@Component
+public class GoogleSheetFetcher {
 
     public static String getGidFromSheetName(String pubHtmlUrl, String sheetName) {
         try {
@@ -49,6 +62,41 @@ public class GoogleSheetUtil {
             }
         } catch (Exception e) {
             System.out.println("Eroare la citirea tab-urilor: " + e.getMessage());
+        }
+    }
+
+
+    public Document fetchSheetAsHtml(String sheetUrl, String sheetName) {
+        WebDriverManager.chromedriver().setup();
+        ChromeOptions opts = new ChromeOptions();
+       // opts.addArguments("--headless=new");
+       // opts.addArguments("--disable-gpu");
+        WebDriver driver = new ChromeDriver(opts);
+
+        try {
+            driver.get(sheetUrl);
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("ul#sheet-menu a")
+            ));
+
+            System.out.println("🔔 Te rog fă click pe tab-ul „" + sheetName + "” în fereastra Chrome, apoi apasă ENTER aici...");
+            new Scanner(System.in).nextLine();
+
+            wait.until(ExpectedConditions
+                    .visibilityOfElementLocated(By.cssSelector("table.waffle"))
+            );
+
+            String tableHtml = driver
+                    .findElement(By.cssSelector("table.waffle"))
+                    .getAttribute("outerHTML");
+
+            return Jsoup.parse(tableHtml);
+
+
+        } finally {
+            driver.quit();
         }
     }
 

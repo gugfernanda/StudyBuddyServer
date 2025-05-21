@@ -2,6 +2,7 @@ package com.example.studybuddy.controller;
 
 import com.example.studybuddy.repository.EventRepository;
 import com.example.studybuddy.repository.UserRepository;
+import com.example.studybuddy.repository.dto.ManualScheduleDTO;
 import com.example.studybuddy.repository.dto.ScheduleImportRequestDTO;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.implementation.ScheduleImportService;
@@ -43,6 +44,12 @@ public class ScheduleImportController {
         eventRepository.deleteAllByUserAndScheduleLabelAndImportedIsTrue(user, label);
 
         return ResponseEntity.ok("Schedule with label '" + label + "' has been cleared.");
+    }
+
+    @PostMapping("/manual")
+    public ResponseEntity<?> addManualSchedule(@RequestBody ManualScheduleDTO dto, HttpServletRequest httpRequest) {
+        importService.importManualSchedule(dto, httpRequest);
+        return ResponseEntity.ok("Manual schedule imported successfully!");
     }
 
 }

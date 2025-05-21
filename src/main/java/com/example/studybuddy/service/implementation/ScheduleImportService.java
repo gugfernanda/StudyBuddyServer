@@ -2,14 +2,18 @@ package com.example.studybuddy.service.implementation;
 
 import com.example.studybuddy.repository.EventRepository;
 import com.example.studybuddy.repository.UserRepository;
+import com.example.studybuddy.repository.dto.ManualScheduleDTO;
 import com.example.studybuddy.repository.dto.ScheduleImportRequestDTO;
 import com.example.studybuddy.repository.entity.Event;
 import com.example.studybuddy.repository.entity.User;
 import com.opencsv.CSVReader;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
-import com.example.studybuddy.utils.GoogleSheetUtil;
+import com.example.studybuddy.utils.GoogleSheetFetcher;
 
 
 import java.io.InputStreamReader;
@@ -27,84 +31,23 @@ public class ScheduleImportService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+    private final GoogleSheetFetcher googleSheetFetcher;
 
-    public ScheduleImportService(EventRepository eventRepository, UserRepository userRepository) {
+    public ScheduleImportService(EventRepository eventRepository, UserRepository userRepository, GoogleSheetFetcher googleSheetFetcher) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
+        this.googleSheetFetcher = googleSheetFetcher;
     }
 
 
     private int findGroupColumnIndex(String[] headerRow, String groupName) {
         for (int i = 0; i < headerRow.length; i++) {
-            if(headerRow[i] != null && headerRow[i].trim().contains(groupName)) {
+            if (headerRow[i] != null && headerRow[i].trim().contains(groupName)) {
                 return i;
             }
         }
         throw new IllegalArgumentException("Group column not found: " + groupName);
     }
-
-    private Map<DayOfWeek, List<ScheduleEntry>> parseSchedule(List<String[]> rows, int colIndex) {
-        Map<DayOfWeek, List<ScheduleEntry>> scheduleMap = new HashMap<>();
-
-        DayOfWeek currentDay = null;
-
-        for (int i = 0; i < rows.size(); i++) {
-            String[] row = rows.get(i);
-
-            System.out.println("🧠 Parsing row: " + Arrays.toString(row));
-
-
-            if (row.length <= colIndex) continue;
-
-
-            String ora = null;
-
-            for (int c = 0; c < row.length; c++) {
-                String cell = row[c];
-                if (cell != null && cell.trim().matches("\\d{2}-\\d{2}")) {
-                    ora = cell.trim();
-                    break;
-                }
-            }
-
-            if (ora != null && currentDay != null) {
-                String content = row[colIndex];
-                if (content == null || content.isBlank()) continue;
-
-                try {
-                    String[] parts = ora.split("-");
-                    LocalTime start = LocalTime.of(Integer.parseInt(parts[0]), 0);
-                    LocalTime end = LocalTime.of(Integer.parseInt(parts[1]), 0);
-
-                    ScheduleEntry entry = new ScheduleEntry(content.trim(), start, end);
-                    scheduleMap.computeIfAbsent(currentDay, k -> new ArrayList<>()).add(entry);
-
-                    System.out.println(" Event adugat: " + start + " - " + end + " -> " + entry.title + " @ " + currentDay);
-                } catch (Exception e) {
-                    System.out.println(" Eroare la parsare ora: " + ora + " -> " + e.getMessage());
-                }
-            }
-
-            String cellLower = row[0].trim().toLowerCase();
-            if (cellLower.length() == 1) {
-                switch (cellLower) {
-                    case "l": currentDay = DayOfWeek.MONDAY; break;
-                    case "m": currentDay = DayOfWeek.TUESDAY; break;
-                    case "w": case "mi": currentDay = DayOfWeek.WEDNESDAY; break;
-                    case "j": currentDay = DayOfWeek.THURSDAY; break;
-                    case "v": currentDay = DayOfWeek.FRIDAY; break;
-                    case "s": currentDay = DayOfWeek.SATURDAY; break;
-                    case "d": currentDay = DayOfWeek.SUNDAY; break;
-                }
-                System.out.println(" Zi detectata: " + currentDay);
-            }
-
-        }
-
-        System.out.println("#################Mapă finală: " + scheduleMap.keySet());
-        return scheduleMap;
-    }
-
 
 
     private void createReccuringEvents(Map<DayOfWeek, List<ScheduleEntry>> scheduleMap, ScheduleImportRequestDTO request, User user) {
@@ -112,78 +55,58 @@ public class ScheduleImportService {
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = request.getSemesterEndDate();
 
-        for(LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             DayOfWeek ziua = date.getDayOfWeek();
 
-            if(scheduleMap.containsKey(ziua)) {
-                for(ScheduleEntry entry : scheduleMap.get(ziua)) {
-                    LocalDateTime start = LocalDateTime.of(date, entry.start);
-                    LocalDateTime end = LocalDateTime.of(date, entry.end);
+            if (!scheduleMap.containsKey(ziua)) continue;
 
-                    ParsedEntry parsed = parseEntry(entry.title);
+            for(ScheduleEntry e : scheduleMap.get(ziua)) {
+                LocalDateTime start = LocalDateTime.of(date, e.start);
+                LocalDateTime end = LocalDateTime.of(date, e.end);
 
-                    Event event = new Event();
-                    event.setTitle(entry.title);
+                Event event = new Event();
+                event.setTitle(e.title);
+                event.setStartTime(start);
+                event.setEndTime(end);
+                event.setUser(user);
+                event.setImported(true);
+                event.setScheduleLabel(request.getScheduleLabel());
 
-                    if(parsed != null) {
-                        StringBuilder desc = new StringBuilder();
-                        if(!parsed.room.isEmpty()) {
-                            desc.append("Sala ").append(parsed.room);
-                        }
-                        if(!parsed.teacher.isEmpty()) {
-                            if(!desc.isEmpty())
-                                desc.append(", ");
-                            desc.append("cu ").append(parsed.teacher);
-                        }
-                        event.setDescription(desc.toString());
-                    } else {
-                        event.setDescription("Importat din orar");
+                ParsedEntry p = parseEntry(e.title);
+                if(p != null) {
+                    StringBuilder desc = new StringBuilder();
+                    if(!p.room.isEmpty()) desc.append("Sala ").append(p.room);
+                    if(!p.teacher.isEmpty()) {
+                        if(desc.length() > 0) desc.append(", ");
+                        desc.append("cu ").append(p.teacher);
                     }
-
-
-                    event.setStartTime(start);
-                    event.setEndTime(end);
-                    event.setUser(user);
-                    event.setImported(true);
-                    event.setScheduleLabel(request.getScheduleLabel());
-
-
-                    eventRepository.save(event);
-
-                    System.out.println("🔽 Salvăm eveniment:");
-                    System.out.println("Titlu: " + event.getTitle());
-                    System.out.println("Descriere: " + event.getDescription());
-                    System.out.println("Start: " + event.getStartTime());
-                    System.out.println("End: " + event.getEndTime());
-                    System.out.println("User: " + event.getUser().getUsername());
-                    System.out.println("Label: " + event.getScheduleLabel());
-
-
+                    event.setDescription(desc.toString());
+                } else {
+                    event.setDescription("Importat din orar");
                 }
-            }
+                eventRepository.save(event);
         }
     }
+}
 
     private ParsedEntry parseEntry(String rawContent) {
         if(rawContent == null || rawContent.isBlank()) return null;
 
         String room = "";
         String teacher = "";
-        String content = rawContent.trim();
 
-        Matcher roomMatcher = Pattern.compile("\\b([A-Z]{1,4}\\d+[a-zA-Z]?\\b)").matcher(content);
+        Matcher roomMatcher = Pattern.compile("\\b([A-Z]{1,4}\\d+[a-zA-Z]?\\b)").matcher(rawContent);
         if(roomMatcher.find()) {
             room = roomMatcher.group(1);
         }
 
-        Matcher teacherMatcher = Pattern.compile("([A-Z]\\.\\s?[A-Z][a-zăîâșț]+)").matcher(content);
+        Matcher teacherMatcher = Pattern.compile("([A-Z]\\.\\s?[A-Z][a-zăîâșț]+)").matcher(rawContent);
         if(teacherMatcher.find()) {
             teacher = teacherMatcher.group(1);
         }
 
         return new ParsedEntry(room, teacher);
     }
-
 
 
     private String normalizeGroupName(String value) {
@@ -200,80 +123,124 @@ public class ScheduleImportService {
         }
     }
 
+    private Map<DayOfWeek, List<ScheduleEntry>> parseSchedule(List<String[]> rows, int colIndex) {
+        Map<DayOfWeek, List<ScheduleEntry>> scheduleMap = new HashMap<>();
+        DayOfWeek currentDay = null;
+
+        for(String[] row : rows) {
+            if(row.length <= colIndex) continue;
+
+            String first = row[0] != null ? row[0].trim().toLowerCase() : "";
+            switch (first) {
+                case "l": currentDay = DayOfWeek.MONDAY; break;
+                case "m": currentDay = DayOfWeek.TUESDAY; break;
+                case "mi": currentDay = DayOfWeek.WEDNESDAY; break;
+                case "j": currentDay = DayOfWeek.THURSDAY; break;
+                case "v": currentDay = DayOfWeek.FRIDAY; break;
+                case "s": currentDay = DayOfWeek.SATURDAY; break;
+                case "d": currentDay = DayOfWeek.SUNDAY; break;
+            }
+
+            String timeCell = null;
+            for(int c = 0; c < colIndex; c++) {
+                if(row[c] != null && row[c].trim().matches("\\d{2}-\\d{2}")) {
+                    timeCell = row[c].trim();
+                    break;
+                }
+            }
+
+            if(currentDay != null && timeCell != null) {
+                String content = row[colIndex];
+                if(content != null && !content.isBlank()) {
+                    String[] parts = timeCell.split("-");
+                    LocalTime start = LocalTime.of(Integer.parseInt(parts[0]), 0);
+                    LocalTime end = LocalTime.of(Integer.parseInt(parts[1]), 0);
+
+                    ScheduleEntry entry = new ScheduleEntry(content.trim(), start, end);
+                    scheduleMap
+                            .computeIfAbsent(currentDay, k -> new ArrayList<>())
+                            .add(entry);
+                }
+            }
+        }
+        return scheduleMap;
+    }
+
 
     public void importScheduleFromGoogleSheets(ScheduleImportRequestDTO request, HttpServletRequest httpRequest) {
         try {
-            // DEBUG:
-            GoogleSheetUtil.printAllSheetTabs(request.getSheetUrl());
             HttpSession session = httpRequest.getSession(false);
 
-            if(session == null || session.getAttribute("user") == null) {
+            if (session == null || session.getAttribute("user") == null) {
                 throw new RuntimeException("No user is logged in");
             }
 
             String username = session.getAttribute("user").toString();
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("User not found" + username));
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-            String gid = GoogleSheetUtil.getGidFromSheetName(request.getSheetUrl(), request.getSheetName());
+            Document tableDoc = googleSheetFetcher.fetchSheetAsHtml(
+                    request.getSheetUrl(), request.getSheetName()
+            );
 
-            String spreadsheetId = extractSpreadSheetId(request.getSheetUrl());
-            String csvUrl = "https://docs.google.com/spreadsheets/d/e/" + spreadsheetId + "/gviz/tq?tqx=out:csv&gid=" + gid;
 
-            //String csvUrl = request.getSheetUrl().replace("/pubhtml", "/pub?output=csv");
+            List<String[]> allRows = new ArrayList<>();
+            Elements rows = tableDoc.select("tr");
 
-            List<String[]> allRows;
-            try(CSVReader reader = new CSVReader(new InputStreamReader(new URL(csvUrl).openStream()))) {
-                allRows = reader.readAll();
+            for (Element row : rows) {
+                Elements cells = row.select("th, td");
+                String[] cols = cells.stream()
+                        .map(Element::text)
+                        .toArray(String[]::new);
+                allRows.add(cols);
             }
 
-            System.out.println("📥 CSV rows:");
-            for (String[] row : allRows) {
-                System.out.println(Arrays.toString(row));
-            }
+            String[] header = allRows.get(0);
+            int groupCol = findGroupColumnIndex(header, request.getGroup());
 
-            int groupColIndex = -1;
+            List<String[]> sectionRows = allRows.subList(1, allRows.size());
+            Map<DayOfWeek, List<ScheduleEntry>> scheduleMap = parseSchedule(sectionRows, groupCol);
 
-            for (String[] row : allRows) {
-                for (int col = 0; col < row.length; col++) {
-                    String cell = row[col];
-                    if (cell != null && normalizeGroupName(cell).equals(normalizeGroupName(request.getGroup()))) {
-                        System.out.println("✅ Găsit grup: " + cell + " la colIndex: " + col);
-                        groupColIndex = col;
-                        break;
-                    } else {
-                        System.out.println("❌ Nu e grupul: " + cell + " vs " + request.getGroup());
-                    }
-                }
-
-                if (groupColIndex != -1) break;
-            }
-
-            if (groupColIndex == -1) {
-                throw new RuntimeException("Could not find correct group column");
-            }
-
-            List<String[]> sectionRows = allRows.subList(2, allRows.size());
-
-            System.out.println("📚 Trimitem spre parsare " + sectionRows.size() + " rânduri:");
-            for (String[] row : sectionRows) {
-                System.out.println(Arrays.toString(row));
-            }
-
-            Map<DayOfWeek, List<ScheduleEntry>> parsed = parseSchedule(sectionRows, groupColIndex);
-
-            System.out.println("🗺️ Rezultat final parse: ");
-            for (Map.Entry<DayOfWeek, List<ScheduleEntry>> entry : parsed.entrySet()) {
-                System.out.println("Zi: " + entry.getKey());
-                for (ScheduleEntry e : entry.getValue()) {
-                    System.out.println("  - " + e.start + " - " + e.end + ": " + e.title);
-                }
-            }
-
-            createReccuringEvents(parsed, request, user);
+            createReccuringEvents(scheduleMap, request, user);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to import schedule: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to import schedule" + e.getMessage(), e);
         }
+    }
+
+    public void importManualSchedule(ManualScheduleDTO dto, HttpServletRequest httpRequest) {
+        HttpSession session = httpRequest.getSession(false);
+
+        if (session == null || session.getAttribute("user") == null) {
+            throw new RuntimeException("No user is logged in");
+        }
+
+        String username = session.getAttribute("user").toString();
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        LocalDate today = LocalDate.now();
+        DayOfWeek targetDow = dto.getDayOfWeek();
+        LocalDate firstDate = dto.getStartDate();
+        while(firstDate.getDayOfWeek() != targetDow) {
+            firstDate = firstDate.plusDays(1);
+        }
+
+        LocalDate endDate = dto.getRepeatUntil();
+        for(LocalDate date = firstDate; !date.isAfter(endDate); date = date.plusWeeks(1)) {
+            LocalDateTime start = LocalDateTime.of(date, dto.getStartTime());
+            LocalDateTime end = LocalDateTime.of(date, dto.getEndTime());
+
+            Event ev = new Event();
+            ev.setTitle(dto.getTitle());
+            ev.setStartTime(start);
+            ev.setEndTime(end);
+            ev.setUser(user);
+            ev.setImported(true);
+            ev.setScheduleLabel(dto.getScheduleLabel());
+            ev.setDescription(dto.getDescription());
+
+            eventRepository.save(ev);
+        }
+
     }
 
     private static class ParsedEntry {
