@@ -3,6 +3,7 @@ package com.example.studybuddy.service;
 
 import com.example.studybuddy.repository.dto.UserRequestDTO;
 import com.example.studybuddy.repository.dto.UserResponseDTO;
+import com.example.studybuddy.repository.dto.UserUpdateDTO;
 import com.example.studybuddy.repository.entity.User;
 import org.springframework.stereotype.Service;
 
@@ -15,5 +16,6 @@ public interface UserService {
     UserResponseDTO createUser(UserRequestDTO userRequestDTO);
     UserResponseDTO getUserById(Long id);
     List<UserResponseDTO> getAllUsers();
+    public UserResponseDTO updateUser(Long id, UserUpdateDTO dto);
 
 }

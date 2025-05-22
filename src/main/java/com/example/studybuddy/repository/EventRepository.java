@@ -13,6 +13,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByUserId(Long userId);
     List<Event> findByUser(User user);
     void deleteAllByUserAndScheduleLabelAndImportedIsTrue(User user, String scheduleLabel);
+    void deleteAllByUserAndScheduleLabel(User user, String scheduleLabel);
 
     List<Event> findByUserAndStartTimeBetween(User user, LocalDateTime localDateTime, LocalDateTime localDateTime1);
 }

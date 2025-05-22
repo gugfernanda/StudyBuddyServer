@@ -243,6 +243,18 @@ public class ScheduleImportService {
 
     }
 
+    public void deleteScheduleByLabel(String label, HttpServletRequest httpRequest) {
+        HttpSession session = httpRequest.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            throw new RuntimeException("No user is logged in");
+        }
+
+        String username = session.getAttribute("user").toString();
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        eventRepository.deleteAllByUserAndScheduleLabel(user, label);
+    }
+
     private static class ParsedEntry {
         String room;
         String teacher;

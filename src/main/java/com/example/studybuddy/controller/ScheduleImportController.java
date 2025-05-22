@@ -52,4 +52,10 @@ public class ScheduleImportController {
         return ResponseEntity.ok("Manual schedule imported successfully!");
     }
 
+    @DeleteMapping("/label/{label}")
+    public ResponseEntity<?> deleteManualSchedule(@PathVariable String label, HttpServletRequest httpRequest) {
+        importService.deleteScheduleByLabel(label, httpRequest);
+        return ResponseEntity.ok("All events with label '" + label + "' deleted successfully!");
+    }
+
 }

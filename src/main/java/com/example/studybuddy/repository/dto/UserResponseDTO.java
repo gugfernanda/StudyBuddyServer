@@ -6,7 +6,6 @@ import lombok.*;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @ToString
 public class UserResponseDTO {
 
@@ -29,6 +28,9 @@ public class UserResponseDTO {
         this.username = username;
         this.fullName = fullName;
         this.email = email;
+    }
+
+    public UserResponseDTO() {
     }
 
     public UserResponseDTO(User user) {

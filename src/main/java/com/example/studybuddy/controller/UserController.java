@@ -3,6 +3,7 @@ package com.example.studybuddy.controller;
 import com.example.studybuddy.repository.UserRepository;
 import com.example.studybuddy.repository.dto.UserRequestDTO;
 import com.example.studybuddy.repository.dto.UserResponseDTO;
+import com.example.studybuddy.repository.dto.UserUpdateDTO;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,12 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         List<UserResponseDTO> users = userService.getAllUsers();
         return new ResponseEntity<>(users, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO) {
+        UserResponseDTO savedUser = userService.updateUser(id, userUpdateDTO);
+        return ResponseEntity.ok(savedUser);
     }
 
 
