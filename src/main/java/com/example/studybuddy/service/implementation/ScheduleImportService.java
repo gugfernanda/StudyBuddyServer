@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import com.example.studybuddy.utils.GoogleSheetFetcher;
 import org.springframework.util.StringUtils;
@@ -81,6 +82,7 @@ public class ScheduleImportService {
 
     }
 
+    @Transactional
     public void deleteScheduleByLabel(String label, HttpServletRequest httpRequest) {
         HttpSession session = httpRequest.getSession(false);
         if (session == null || session.getAttribute("user") == null) {

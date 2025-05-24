@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# asigură stdout UTF-8 chiar pe Windows
+# ——— asigurăm stdout UTF-8 chiar și pe Windows ———
 import sys, io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 import argparse, json, re, traceback, unicodedata, requests, pandas as pd
 from bs4 import BeautifulSoup
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════
 def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
     resp = requests.get(url)
     resp.raise_for_status()
@@ -17,7 +17,7 @@ def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
 
     soup = BeautifulSoup(html, "lxml")
     names = [li.text.strip() for li in soup.select("#sheet-menu li")]
-    if not names:
+    if not names:                                       # fallback JS-inline
         m = re.compile(r'name: "(.*?)"')
         scr = soup.find("script", text=m)
         if scr:
@@ -27,7 +27,7 @@ def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
     return {names[i] if i < len(names) else f"Sheet{i+1}": df
             for i, df in enumerate(tables)}
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════
 def main() -> None:
     p = argparse.ArgumentParser(description="Import schedule from Google Sheets")
     p.add_argument("url")
@@ -50,7 +50,7 @@ def main() -> None:
     body = body.applymap(lambda x: unicodedata.normalize("NFC", x)
     if isinstance(x, str) else x)
 
-    # detectăm coloana cu ore
+    # — detectăm coloana cu ore —
     time_pat = re.compile(r"\d{1,2}\s*[–—-]\s*\d{1,2}")
     time_col = next((i for i in range(body.shape[1])
                      if body.iloc[:30, i].astype(str).str.contains(time_pat).any()),
@@ -68,17 +68,15 @@ def main() -> None:
 
     time_labels = raw_times.apply(pad)
 
-    # începuturile de zi pe baza reset-ului de oră
+    # — identificăm limitele fiecărei zile prin reset de oră —
     hours = [int(t.split("-")[0]) if t else None for t in time_labels]
-    day_starts = [0]
-    prev = None
+    day_starts, prev = [0], None
     for i, h in enumerate(hours[1:], 1):
         if h is not None and prev is not None and h < prev:
             day_starts.append(i)
         prev = h if h is not None else prev
 
-    ro_days = ["LUNI", "MARȚI", "MIERCURI", "JOI", "VINERI",
-               "SÂMBĂTĂ", "DUMINICĂ"]
+    ro_days = ["LUNI", "MARȚI", "MIERCURI", "JOI", "VINERI", "SÂMBĂTĂ", "DUMINICĂ"]
     segments = []
     for k, s in enumerate(day_starts):
         e = day_starts[k+1] - 1 if k+1 < len(day_starts) else len(body) - 1
@@ -90,11 +88,13 @@ def main() -> None:
                 return d
         return ""
 
-    # filtrăm coloanele pentru grupă / serie
+    # — filtrăm coloanele de interes (grupă / serie) —
     col_idxs = [i for i, (ser, grp) in enumerate(body.columns)
                 if str(grp) == args.group and (args.series is None or str(ser) == args.series)]
     if not col_idxs:
         sys.exit("No matching column for group/series")
+
+    room_re = re.compile(r"\b([A-Z]{1,4}\d{2,3}[A-Z]{0,2})\b", re.IGNORECASE)
 
     for col in col_idxs:
         col_s = body.iloc[:, col]
@@ -107,16 +107,26 @@ def main() -> None:
             run, texts = [i], [str(col_s.iat[i]).strip()]
             j = i + 1
             while j < n and not pd.isna(col_s.iat[j]) and str(col_s.iat[j]).strip():
-                run.append(j)
-                texts.append(str(col_s.iat[j]).strip())
-                j += 1
+                run.append(j); texts.append(str(col_s.iat[j]).strip()); j += 1
 
+            # — titlu, descriere brute —
             uniq = []
             for t in texts:
                 if t not in uniq:
                     uniq.append(t)
-            title = uniq[0]
+
+            title_raw = uniq[0]
             description = ", ".join(uniq[1:]) if len(uniq) > 1 else ""
+
+            # — extragem eventual codul de sală din titlu —
+            m_room = room_re.search(title_raw)
+            room = m_room.group(1) if m_room else None
+            title = room_re.sub("", title_raw).strip() or title_raw  # fallback
+
+            if not description and room:                       # lab/seminar
+                description = f"sala {room}"
+            elif description and room and "sala" not in description.lower():
+                description = f"{description}, sala {room}"
 
             m1 = re.match(r"(\d{2})-(\d{2})", time_labels.iat[run[0]])
             m2 = re.match(r"(\d{2})-(\d{2})", time_labels.iat[run[-1]])
@@ -126,14 +136,14 @@ def main() -> None:
             payload = {
                 "title":       title,
                 "description": description,
-                "dayOfWeek":         day_of_row(run[0]),
+                "dayOfWeek":   day_of_row(run[0]),          # << key align cu DTO
                 "startDate":   args.startDate,
                 "endDate":     args.endDate,
                 "startTime":   start,
                 "endTime":     end
             }
 
-            # eliminăm newline-urile brute din texte
+            # înlocuim newline-uri brute
             for k in ("title", "description"):
                 if isinstance(payload[k], str):
                     payload[k] = payload[k].replace("\n", " ").replace("\r", " ")
@@ -141,7 +151,7 @@ def main() -> None:
             print(json.dumps(payload, ensure_ascii=False))
             i = j
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     try:
         main()
