@@ -5,13 +5,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@NoArgsConstructor
 public class EventRequestDTO {
     private String username;
     private String title;
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+
+    public EventRequestDTO() {
+    }
 
     public String getUsername() {
         return username;

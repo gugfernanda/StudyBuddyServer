@@ -4,6 +4,7 @@ import com.example.studybuddy.repository.EventRepository;
 import com.example.studybuddy.repository.UserRepository;
 import com.example.studybuddy.repository.dto.ManualScheduleDTO;
 import com.example.studybuddy.repository.dto.ScheduleImportRequestDTO;
+import com.example.studybuddy.repository.dto.UrlImportRequestDTO;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.implementation.ScheduleImportService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,11 +26,6 @@ public class ScheduleImportController {
         this.eventRepository = eventRepository;
     }
 
-    @PostMapping("/import")
-    public ResponseEntity<?> importSchedule(@RequestBody ScheduleImportRequestDTO request, HttpServletRequest httpRequest) {
-        importService.importScheduleFromGoogleSheets(request, httpRequest);
-        return ResponseEntity.ok("Schedule imported successfully!");
-    }
 
     @DeleteMapping("/clear")
     public ResponseEntity<?> clearImportedSchedule(@RequestParam String label, HttpServletRequest httpRequest) {
@@ -56,6 +52,12 @@ public class ScheduleImportController {
     public ResponseEntity<?> deleteManualSchedule(@PathVariable String label, HttpServletRequest httpRequest) {
         importService.deleteScheduleByLabel(label, httpRequest);
         return ResponseEntity.ok("All events with label '" + label + "' deleted successfully!");
+    }
+
+    @PostMapping("/importByUrl")
+    public ResponseEntity<?> importByUrl(@RequestBody UrlImportRequestDTO request, HttpServletRequest httpRequest) {
+        importService.importByUrl(request, httpRequest);
+        return ResponseEntity.ok("Url imported successfully!");
     }
 
 }
