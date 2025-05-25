@@ -11,8 +11,26 @@ public class EventRequestDTO {
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private String scheduleLabel;
 
     public EventRequestDTO() {
+    }
+
+    public EventRequestDTO(String username, String title, String description, LocalDateTime startTime, LocalDateTime endTime, String scheduleLabel) {
+        this.username = username;
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.scheduleLabel = scheduleLabel;
+    }
+
+    public String getScheduleLabel() {
+        return scheduleLabel;
+    }
+
+    public void setScheduleLabel(String scheduleLabel) {
+        this.scheduleLabel = scheduleLabel;
     }
 
     public String getUsername() {
@@ -55,11 +73,4 @@ public class EventRequestDTO {
         this.endTime = endTime;
     }
 
-    public EventRequestDTO(String username, String title, String description, LocalDateTime startTime, LocalDateTime endTime) {
-        this.username = username;
-        this.title = title;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-    }
 }

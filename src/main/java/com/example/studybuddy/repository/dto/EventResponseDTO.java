@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@NoArgsConstructor
+
 public class EventResponseDTO {
     private Long id;
     private String title;
@@ -13,6 +13,36 @@ public class EventResponseDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String username;
+    private String scheduleLabel;
+
+    public EventResponseDTO(Long id, String title, String description, LocalDateTime startTime, LocalDateTime endTime, String username, String scheduleLabel) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.username = username;
+        this.scheduleLabel = scheduleLabel;
+    }
+
+    public EventResponseDTO() {
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getScheduleLabel() {
+        return scheduleLabel;
+    }
+
+    public void setScheduleLabel(String scheduleLabel) {
+        this.scheduleLabel = scheduleLabel;
+    }
 
     public Long getId() {
         return id;
@@ -62,12 +92,5 @@ public class EventResponseDTO {
         this.username = username;
     }
 
-    public EventResponseDTO(Long id, String title, String description, LocalDateTime startTime, LocalDateTime endTime, String username) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.username = username;
-    }
+
 }

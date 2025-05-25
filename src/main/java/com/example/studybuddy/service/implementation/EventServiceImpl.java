@@ -36,7 +36,8 @@ public class EventServiceImpl implements EventService {
                         event.getDescription(),
                         event.getStartTime(),
                         event.getEndTime(),
-                        event.getUser().getUsername()
+                        event.getUser().getUsername(),
+                        event.getScheduleLabel()
                 )).collect(Collectors.toList());
     }
 
@@ -50,7 +51,8 @@ public class EventServiceImpl implements EventService {
         event.setDescription(requestDTO.getDescription());
         event.setStartTime(requestDTO.getStartTime());
         event.setEndTime(requestDTO.getEndTime());
-        event.setScheduleLabel(null);
+        event.setScheduleLabel(requestDTO.getScheduleLabel());
+        //event.setScheduleLabel(null);
         event.setImported(false);
         event.setUser(user);
 
@@ -62,7 +64,8 @@ public class EventServiceImpl implements EventService {
                 savedEvent.getDescription(),
                 savedEvent.getStartTime(),
                 savedEvent.getEndTime(),
-                savedEvent.getUser().getUsername());
+                savedEvent.getUser().getUsername(),
+                savedEvent.getScheduleLabel());
     }
 
     @Override
@@ -83,7 +86,8 @@ public class EventServiceImpl implements EventService {
                 updatedEvent.getDescription(),
                 updatedEvent.getStartTime(),
                 updatedEvent.getEndTime(),
-                updatedEvent.getUser().getUsername());
+                updatedEvent.getUser().getUsername(),
+                updatedEvent.getScheduleLabel());
     }
 
     @Override
