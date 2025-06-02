@@ -154,6 +154,12 @@ public class ScheduleImportService {
                     int idx = line.indexOf('{');
                     if (idx < 0) continue;                 // skip non-JSON noise
                     String json = line.substring(idx).trim();
+
+                    if (json.length() < 2 || !json.endsWith("}")) {
+                        System.err.println("⚠  Sar linia (JSON incomplet): " + json);
+                        continue;
+                    }
+
                     try {
                         ImportedEventDTO dto = objectMapper.readValue(json, ImportedEventDTO.class);
                         if (StringUtils.hasText(dto.getStartTime()) && StringUtils.hasText(dto.getEndTime()))
