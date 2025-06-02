@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173") // allow requests from frontend
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -29,15 +29,11 @@ public class UserController {
         this.modelMapper = modelMapper;
     }
 
-
-
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserRequestDTO userRequestDTO) {
         UserResponseDTO savedUser = userService.createUser(userRequestDTO);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
-
-
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> getUser(@PathVariable long id) {
@@ -52,16 +48,11 @@ public class UserController {
         return new ResponseEntity<>(userResponseDTO, HttpStatus.OK);
     }
 
-
-
     @DeleteMapping("delete/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable long id) {
         boolean deleted = userService.deleteUserById(id);
         return deleted ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
-
-
-
 
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {

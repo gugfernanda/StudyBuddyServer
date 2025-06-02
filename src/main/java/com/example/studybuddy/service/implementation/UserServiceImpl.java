@@ -30,8 +30,6 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-
-
     @Override
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
         User user = modelMapper.map(userRequestDTO, User.class);
@@ -40,14 +38,6 @@ public class UserServiceImpl implements UserService {
         return modelMapper.map(savedUser, UserResponseDTO.class);
     }
 
-
-    @Override
-    public UserResponseDTO getUserById(Long id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        return userOptional.map(user -> modelMapper.map(user, UserResponseDTO.class)).orElse(null);
-    }
-
-
     @Override
     public boolean deleteUserById(Long id) {
         if(userRepository.existsById(id)) {
@@ -55,6 +45,13 @@ public class UserServiceImpl implements UserService {
             return true;
         }
         return false;
+    }
+
+
+    @Override
+    public UserResponseDTO getUserById(Long id) {
+        Optional<User> userOptional = userRepository.findById(id);
+        return userOptional.map(user -> modelMapper.map(user, UserResponseDTO.class)).orElse(null);
     }
 
 

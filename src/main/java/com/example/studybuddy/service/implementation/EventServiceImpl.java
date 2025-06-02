@@ -52,7 +52,6 @@ public class EventServiceImpl implements EventService {
         event.setStartTime(requestDTO.getStartTime());
         event.setEndTime(requestDTO.getEndTime());
         event.setScheduleLabel(requestDTO.getScheduleLabel());
-        //event.setScheduleLabel(null);
         event.setImported(false);
         event.setUser(user);
 

@@ -56,7 +56,6 @@ public class AuthController {
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-
             HttpSession session = request.getSession();
             session.setAttribute("user", userDetails.getUsername());
 
@@ -101,9 +100,6 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRequestDTO userRequestDTO) {
-
-        //System.out.println("✅ Request received at /auth/register: " + userRequestDTO);
-
         if(userRepository.findByEmail(userRequestDTO.getEmail()).isPresent() ||
                 userRepository.findByUsername(userRequestDTO.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body("Email or username already in use");
@@ -123,7 +119,6 @@ public class AuthController {
         if(!userRequestDTO.getPassword().matches(".*[@$!%*?&].*")) {
             errors.add("Password must contain at least one special character");
         }
-
         if(!errors.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", errors.get(0)));
         }
@@ -136,7 +131,6 @@ public class AuthController {
 
         userRepository.save(newUser);
         return ResponseEntity.ok("User registered successfully");
-
     }
 
     @PostMapping("/forgot-password")

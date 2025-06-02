@@ -1,14 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-# ——— asigurăm stdout UTF-8 chiar și pe Windows ———
 import sys, io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 import argparse, json, re, traceback, unicodedata, requests, pandas as pd
 from bs4 import BeautifulSoup
 
-# ════════════════════════════════════════════════════════════════════
 def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
     resp = requests.get(url)
     resp.raise_for_status()
@@ -17,7 +13,7 @@ def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
 
     soup = BeautifulSoup(html, "lxml")
     names = [li.text.strip() for li in soup.select("#sheet-menu li")]
-    if not names:                                       # fallback JS-inline
+    if not names:
         m = re.compile(r'name: "(.*?)"')
         scr = soup.find("script", text=m)
         if scr:
@@ -27,7 +23,6 @@ def extract_google_sheets_data(url: str) -> dict[str, pd.DataFrame]:
     return {names[i] if i < len(names) else f"Sheet{i+1}": df
             for i, df in enumerate(tables)}
 
-# ════════════════════════════════════════════════════════════════════
 def main() -> None:
     p = argparse.ArgumentParser(description="Import schedule from Google Sheets")
     p.add_argument("url")
@@ -50,7 +45,6 @@ def main() -> None:
     body = body.applymap(lambda x: unicodedata.normalize("NFC", x)
     if isinstance(x, str) else x)
 
-    # — detectăm coloana cu ore —
     time_pat = re.compile(r"\d{1,2}\s*[–—-]\s*\d{1,2}")
     time_col = next((i for i in range(body.shape[1])
                      if body.iloc[:30, i].astype(str).str.contains(time_pat).any()),
@@ -68,7 +62,6 @@ def main() -> None:
 
     time_labels = raw_times.apply(pad)
 
-    # — identificăm limitele fiecărei zile prin reset de oră —
     hours = [int(t.split("-")[0]) if t else None for t in time_labels]
     day_starts, prev = [0], None
     for i, h in enumerate(hours[1:], 1):
@@ -88,7 +81,6 @@ def main() -> None:
                 return d
         return ""
 
-    # — filtrăm coloanele de interes (grupă / serie) —
     col_idxs = [i for i, (ser, grp) in enumerate(body.columns)
                 if str(grp) == args.group and (args.series is None or str(ser) == args.series)]
     if not col_idxs:
@@ -109,7 +101,6 @@ def main() -> None:
             while j < n and not pd.isna(col_s.iat[j]) and str(col_s.iat[j]).strip():
                 run.append(j); texts.append(str(col_s.iat[j]).strip()); j += 1
 
-            # — titlu, descriere brute —
             uniq = []
             for t in texts:
                 if t not in uniq:
@@ -118,12 +109,11 @@ def main() -> None:
             title_raw = uniq[0]
             description = ", ".join(uniq[1:]) if len(uniq) > 1 else ""
 
-            # — extragem eventual codul de sală din titlu —
             m_room = room_re.search(title_raw)
             room = m_room.group(1) if m_room else None
-            title = room_re.sub("", title_raw).strip() or title_raw  # fallback
+            title = room_re.sub("", title_raw).strip() or title_raw
 
-            if not description and room:                       # lab/seminar
+            if not description and room:
                 description = f"sala {room}"
             elif description and room and "sala" not in description.lower():
                 description = f"{description}, sala {room}"
@@ -136,14 +126,13 @@ def main() -> None:
             payload = {
                 "title":       title,
                 "description": description,
-                "dayOfWeek":   day_of_row(run[0]),          # << key align cu DTO
+                "dayOfWeek":   day_of_row(run[0]),
                 "startDate":   args.startDate,
                 "endDate":     args.endDate,
                 "startTime":   start,
                 "endTime":     end
             }
 
-            # înlocuim newline-uri brute
             for k in ("title", "description"):
                 if isinstance(payload[k], str):
                     payload[k] = payload[k].replace("\n", " ").replace("\r", " ")
@@ -151,7 +140,7 @@ def main() -> None:
             print(json.dumps(payload, ensure_ascii=False))
             i = j
 
-# ════════════════════════════════════════════════════════════════════
+
 if __name__ == "__main__":
     try:
         main()

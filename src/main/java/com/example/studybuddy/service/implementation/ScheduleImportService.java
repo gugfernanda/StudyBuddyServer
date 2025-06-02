@@ -104,14 +104,11 @@ public class ScheduleImportService {
 
         User user = currentUser(httpRequest);
         List<ImportedEventDTO> imported = runPython(req, pythonBin, importScript);
-        System.out.println("DTOs citite = " + imported.size());
 
         String label = buildLabel(req);
         List<Event> events = imported.stream()
                 .flatMap(dto -> expand(dto, req, user, label).stream())
                 .toList();
-
-        System.out.println("Events de salvat = " + events.size());
 
         eventRepository.saveAll(events);
     }
