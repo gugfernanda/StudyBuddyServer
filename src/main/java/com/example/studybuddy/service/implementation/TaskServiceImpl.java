@@ -6,6 +6,7 @@ import com.example.studybuddy.repository.entity.TaskState;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.NotificationService;
 import com.example.studybuddy.service.TaskService;
+import com.google.gson.Gson;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,12 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final NotificationService notificationService;
+    private final WebPushService webPushService;
 
-    public TaskServiceImpl(TaskRepository taskRepository, NotificationService notificationService) {
+    public TaskServiceImpl(TaskRepository taskRepository, NotificationService notificationService, WebPushService webPushService) {
         this.taskRepository = taskRepository;
         this.notificationService = notificationService;
+        this.webPushService = webPushService;
     }
 
     @Override
@@ -70,6 +73,21 @@ public class TaskServiceImpl implements TaskService {
 
         if (newState.equals("DONE")) {
             notificationService.createNotification(task.getUser(), "Great job! You completed \"" + task.getText() + "\".");
+
+            Long userId = task.getUser().getId();
+            Map<String,String> data = Map.of(
+                    "title", "Sarcină finalizată!",
+                    "body", "Ai terminat sarcina \"" + task.getText() + "\".",
+                    "url", "/tasks"
+            );
+            String payloadJson = new Gson().toJson(data);
+
+            try {
+                System.out.println("[TaskServiceImpl] Trimitem push pentru DONE la userId=" + userId);
+                webPushService.sendNotificationTo(userId, payloadJson);
+            } catch(Exception e) {
+                System.err.println("[TaskServiceImpl] Eroare trimitere push DONE: " + e.getMessage());
+            }
         }
 
         return ResponseEntity.ok(Map.of("message", "Task updated successfully"));

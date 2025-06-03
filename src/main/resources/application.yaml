@@ -67,3 +67,9 @@ app:
     reset-token-expiration: 15m
   frontend:
     base-url: http://localhost:5173
+
+push:
+  vapid:
+    public-key: BNugLTzHxoHCOZ7DQGL8LfMdM59KRtWpbB1pSCqTycPr-ClwC9zpQhnSN1DeNbE7wH9cKQWIlTu6fr5ULaj4iu0
+    private-key: TSJwx1nlfJznjPAgM1WrUTlQd3X0P86-UqMxBBj43Lg
+    subject: mailto:studybuddy.sender@gmail.com
