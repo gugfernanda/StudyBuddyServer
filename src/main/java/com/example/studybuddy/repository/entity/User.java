@@ -50,6 +50,17 @@ public class User {
     @Column(name = "language", length = 6)
     String language;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<PushSubscription> pushSubscriptions;
+
+    public List<PushSubscription> getPushSubscriptions() {
+        return pushSubscriptions;
+    }
+
+    public void setPushSubscriptions(List<PushSubscription> pushSubscriptions) {
+        this.pushSubscriptions = pushSubscriptions;
+    }
+
     public List<Task> getTasks() {
         return tasks;
     }

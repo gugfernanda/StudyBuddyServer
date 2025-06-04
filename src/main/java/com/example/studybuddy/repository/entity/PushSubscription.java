@@ -12,8 +12,9 @@ public class PushSubscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, length = 512)
     private String  endpoint;
@@ -30,13 +31,21 @@ public class PushSubscription {
     public PushSubscription() {
     }
 
-    public PushSubscription(Long id, Long userId, String endpoint, String p256dh, String auth, LocalDateTime createdAt) {
+    public PushSubscription(Long id, User user, String endpoint, String p256dh, String auth, LocalDateTime createdAt) {
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.endpoint = endpoint;
         this.p256dh = p256dh;
         this.auth = auth;
         this.createdAt = createdAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Long getId() {
@@ -45,14 +54,6 @@ public class PushSubscription {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public String getEndpoint() {

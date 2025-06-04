@@ -19,5 +19,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByState(TaskState taskState);
     List<Task> findByUserAndDeadline(User user, LocalDate deadline);
     List<Task> findByDeadline(LocalDate deadline);
+    List<Task> findByDeadlineBeforeAndStateNotAndOverdueNotifiedFalse(LocalDate date, TaskState doneState);
 
 }

@@ -6,6 +6,7 @@ import com.example.studybuddy.repository.entity.TaskState;
 import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.implementation.WebPushService;
 
+import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
 
 import org.springframework.context.MessageSource;
@@ -80,7 +81,7 @@ public class DeadlineReminderService {
                         "body",  body,
                         "url",   url
                 );
-                String payloadJson = new com.google.gson.Gson().toJson(data);
+                String payloadJson = new Gson().toJson(data);
 
                 try {
                     System.out.println("[DeadlineReminderService] Trimitem reminder push " +
@@ -91,6 +92,61 @@ public class DeadlineReminderService {
                     System.err.println("[DeadlineReminderService] Eroare la trimiterea push-ului: "
                             + e.getMessage());
                 }
+            }
+        }
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 12 * *  *")
+    public void sendOverdueReminder() {
+        LocalDate today = LocalDate.now();
+
+        List<Task> overdueTasks = taskRepository .findByDeadlineBeforeAndStateNotAndOverdueNotifiedFalse(today, TaskState.DONE);
+        for(Task task : overdueTasks) {
+            User user = task.getUser();
+            Long userId = user.getId();
+
+            String langTag = user.getLanguage();
+            Locale locale = Locale.ENGLISH;
+            if (langTag != null && !langTag.isBlank()) {
+                locale = Locale.forLanguageTag(langTag);
+            }
+
+            String pushTitle = messageSource.getMessage(
+                    "push.task.overdue.title",
+                    null,
+                    locale
+            );
+            String pushBody = messageSource.getMessage(
+                    "push.task.overdue.body",
+                    new Object[]{ task.getText() },
+                    locale
+            );
+            String pushUrl = messageSource.getMessage(
+                    "push.task.overdue.url",
+                    null,
+                    locale
+            );
+
+            Map<String, String> dataOverdue = Map.of(
+                    "title", pushTitle,
+                    "body",  pushBody,
+                    "url",   pushUrl
+            );
+            String payloadOverdueJson = new Gson().toJson(dataOverdue);
+
+            try {
+                System.out.println("[DeadlineReminderService] Trimitem reminder (întârziere) către userId="
+                        + userId + " (locale=" + locale + ") pentru taskId=" + task.getId());
+                webPushService.sendNotificationTo(userId, payloadOverdueJson);
+
+                task.setOverdueNotified(true);
+                taskRepository.save(task);
+                System.out.println("[DeadlineReminderService] Am marcat taskId="
+                        + task.getId() + " ca overdueNotified=true");
+            } catch (Exception e) {
+                System.err.println("[DeadlineReminderService] Eroare la trimiterea push-ului (întârziere): "
+                        + e.getMessage());
             }
         }
     }

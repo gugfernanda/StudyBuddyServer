@@ -35,6 +35,17 @@ public class Task {
     @Column(name = "deadline")
     private LocalDate deadline;
 
+    @Column(name = "overdue_notified")
+    private boolean overdueNotified = false;
+
+    public boolean isOverdueNotified() {
+        return overdueNotified;
+    }
+
+    public void setOverdueNotified(boolean overdueNotified) {
+        this.overdueNotified = overdueNotified;
+    }
+
     public Long getId() {
         return id;
     }

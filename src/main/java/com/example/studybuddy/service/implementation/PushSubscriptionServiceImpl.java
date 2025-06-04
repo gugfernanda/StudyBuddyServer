@@ -37,15 +37,13 @@ public class PushSubscriptionServiceImpl implements PushSubscriptionService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Long userId = user.getId();
-
-        if (pushSubscriptionRepository.existsByUserIdAndEndpoint(userId, pushSubscriptionDTO.getEndpoint())) {
+        if (pushSubscriptionRepository.existsByUserAndEndpoint(user, pushSubscriptionDTO.getEndpoint())) {
             return null;
         }
 
 
         PushSubscription pushSubscription = new PushSubscription();
-        pushSubscription.setUserId(userId);
+        pushSubscription.setUser(user);
         pushSubscription.setEndpoint(pushSubscriptionDTO.getEndpoint());
         pushSubscription.setP256dh(pushSubscriptionDTO.getKeys().getP256dh());
         pushSubscription.setAuth(pushSubscriptionDTO.getKeys().getAuth());
