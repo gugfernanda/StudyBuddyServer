@@ -7,12 +7,17 @@ import com.example.studybuddy.repository.entity.User;
 import com.example.studybuddy.service.NotificationService;
 import com.example.studybuddy.service.TaskService;
 import com.google.gson.Gson;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,11 +27,13 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final NotificationService notificationService;
     private final WebPushService webPushService;
+    private final MessageSource messageSource;
 
-    public TaskServiceImpl(TaskRepository taskRepository, NotificationService notificationService, WebPushService webPushService) {
+    public TaskServiceImpl(TaskRepository taskRepository, NotificationService notificationService, WebPushService webPushService, MessageSource messageSource) {
         this.taskRepository = taskRepository;
         this.notificationService = notificationService;
         this.webPushService = webPushService;
+        this.messageSource = messageSource;
     }
 
     @Override
@@ -72,20 +79,39 @@ public class TaskServiceImpl implements TaskService {
         taskRepository.save(task);
 
         if (newState.equals("DONE")) {
-            notificationService.createNotification(task.getUser(), "Great job! You completed \"" + task.getText() + "\".");
+            User user = task.getUser();
 
-            Long userId = task.getUser().getId();
-            Map<String,String> data = Map.of(
-                    "title", "Sarcină finalizată!",
-                    "body", "Ai terminat sarcina \"" + task.getText() + "\".",
-                    "url", "/tasks"
-            );
-            String payloadJson = new Gson().toJson(data);
+            Locale locale = Locale.ENGLISH; // fallback
+            String langTag = user.getLanguage(); // "ro" sau "en"
+            if (langTag != null && !langTag.isBlank()) {
+                locale = Locale.forLanguageTag(langTag);
+            }
+
+            System.out.println("[TaskServiceImpl] user.getLanguage()=" + langTag + " → locale=" + locale);
+
+            String dbMessage = messageSource.getMessage("notification.task.completed", new Object[]{ task.getText() }, locale);
+            System.out.println("[TaskServiceImpl] Mesaj DB = \"" + dbMessage + "\"");
+            notificationService.createNotification(task.getUser(), dbMessage);
+
+
+            String title = messageSource.getMessage("push.task.done.title", null, locale);
+            String body = messageSource.getMessage("push.task.done.body", new Object[]{ task.getText() }, locale);
+            String url = messageSource.getMessage("push.task.done.url", null, locale);
+
+            System.out.println("[TaskServiceImpl] push.title = \"" + title + "\"");
+            System.out.println("[TaskServiceImpl] push.body  = \"" + body + "\"");
+
+            Map<String, String> data = Map.of("title", title, "body",  body, "url",   url);
+            String payloadJson = new com.google.gson.Gson().toJson(data);
+
+            System.out.println("[TaskServiceImpl] payloadJson = " + payloadJson);
 
             try {
-                System.out.println("[TaskServiceImpl] Trimitem push pentru DONE la userId=" + userId);
+                Long userId = task.getUser().getId();
+                System.out.println("[TaskServiceImpl] Trimitem push pentru DONE la userId=" + userId +
+                        " (locale=" + locale + ")");
                 webPushService.sendNotificationTo(userId, payloadJson);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.err.println("[TaskServiceImpl] Eroare trimitere push DONE: " + e.getMessage());
             }
         }

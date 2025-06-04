@@ -13,6 +13,7 @@ import com.example.studybuddy.service.UserService;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -64,6 +65,18 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO) {
         UserResponseDTO savedUser = userService.updateUser(id, userUpdateDTO);
         return ResponseEntity.ok(savedUser);
+    }
+
+    @PutMapping("/{username}/language")
+    public ResponseEntity<?> setLanguage(@PathVariable String username, @RequestBody Map<String, String> body) {
+        return userRepository.findByUsername(username)
+                .map(user -> {
+                    String lang = body.get("language");
+                    user.setLanguage(lang);
+                    userRepository.save(user);
+                    return ResponseEntity.ok(user);
+                })
+                .orElse(ResponseEntity.badRequest().build());
     }
 
 

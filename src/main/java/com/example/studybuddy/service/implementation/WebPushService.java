@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jose4j.lang.JoseException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import nl.martijndwars.webpush.Notification;
@@ -29,6 +30,7 @@ public class WebPushService {
 
     private final PushSubscriptionRepository subscriptionRepository;
     private CustomPushService pushService;
+    private final MessageSource messageSource;
 
     @Value("${push.vapid.public-key}")
     private String vapidPublicKeyBase64;
@@ -39,8 +41,9 @@ public class WebPushService {
     @Value("${push.vapid.subject}")
     private String vapidSubject;
 
-    public WebPushService(PushSubscriptionRepository subscriptionRepository) {
+    public WebPushService(PushSubscriptionRepository subscriptionRepository, MessageSource messageSource) {
         this.subscriptionRepository = subscriptionRepository;
+        this.messageSource = messageSource;
     }
 
     public String getVapidPublicKeyBase64() {

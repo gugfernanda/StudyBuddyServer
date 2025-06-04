@@ -21,4 +21,5 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     void deleteAllByUserAndScheduleLabel(User user, String scheduleLabel);
 
     List<Event> findByUserAndStartTimeBetween(User user, LocalDateTime localDateTime, LocalDateTime localDateTime1);
+    List<Event> findByStartTimeBetween(LocalDateTime from, LocalDateTime to);
 }
