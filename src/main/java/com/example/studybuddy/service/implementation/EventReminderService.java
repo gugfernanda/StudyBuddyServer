@@ -48,12 +48,10 @@ public class EventReminderService {
     public void sendEventReminders() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourLater = now.plusHours(1);
-
         LocalDateTime from = oneHourLater.minusSeconds(30);
         LocalDateTime to   = oneHourLater.plusSeconds(30);
 
         List<Event> eventsInOneHour = eventRepository.findByStartTimeBetween(from, to);
-        System.out.println("[EventReminderService] Evenimente încep peste o oră (" + oneHourLater + "): " + eventsInOneHour.size());
 
         for (Event event : eventsInOneHour) {
             User user = event.getUser();
@@ -66,41 +64,16 @@ public class EventReminderService {
             }
 
             String startTimeFormatted = event.getStartTime().format(timeFormatter);
-            String dbMessage = messageSource.getMessage(
-                    "notification.event.reminder",
-                    new Object[]{ event.getTitle(), startTimeFormatted },
-                    locale
-            );
-
+            String dbMessage = messageSource.getMessage("notification.event.reminder", new Object[]{ event.getTitle(), startTimeFormatted }, locale);
             notificationService.createNotification(user, dbMessage);
+            String pushTitle = messageSource.getMessage("push.event.reminder.title", null, locale);
+            String pushBody = messageSource.getMessage("push.event.reminder.body", new Object[]{ event.getTitle(), startTimeFormatted }, locale);
+            String pushUrl = messageSource.getMessage("push.event.reminder.url", null, locale);
 
-
-            String pushTitle = messageSource.getMessage(
-                    "push.event.reminder.title",
-                    null,
-                    locale
-            );
-            String pushBody = messageSource.getMessage(
-                    "push.event.reminder.body",
-                    new Object[]{ event.getTitle(), startTimeFormatted },
-                    locale
-            );
-            String pushUrl = messageSource.getMessage(
-                    "push.event.reminder.url",
-                    null,
-                    locale
-            );
-
-            Map<String, String> payloadData = Map.of(
-                    "title", pushTitle,
-                    "body",  pushBody,
-                    "url",   pushUrl
-            );
+            Map<String, String> payloadData = Map.of("title", pushTitle, "body",  pushBody, "url",   pushUrl);
             String payloadJson = new com.google.gson.Gson().toJson(payloadData);
 
             try {
-                System.out.println("[EventReminderService] Trimitem push către userId=" + userId +
-                        " (locale=" + locale + ") pentru eventId=" + event.getId());
                 webPushService.sendNotificationTo(userId, payloadJson);
             } catch (Exception e) {
                 System.err.println("[EventReminderService] Eroare la trimiterea push-ului: " + e.getMessage());

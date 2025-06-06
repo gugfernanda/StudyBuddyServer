@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Setter
 @Getter
@@ -35,8 +36,19 @@ public class Task {
     @Column(name = "deadline")
     private LocalDate deadline;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Column(name = "overdue_notified")
     private boolean overdueNotified = false;
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
 
     public boolean isOverdueNotified() {
         return overdueNotified;

@@ -16,6 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,40 +77,38 @@ public class TaskServiceImpl implements TaskService {
         }
 
         task.setState(TaskState.valueOf(newState));
+
+        if(newState.equals("DONE")) {
+            task.setCompletedAt(LocalDateTime.now());
+        } else {
+            task.setCompletedAt(null);
+        }
+
         taskRepository.save(task);
 
         if (newState.equals("DONE")) {
             User user = task.getUser();
 
-            Locale locale = Locale.ENGLISH; // fallback
-            String langTag = user.getLanguage(); // "ro" sau "en"
+            Locale locale = Locale.ENGLISH;
+            String langTag = user.getLanguage();
             if (langTag != null && !langTag.isBlank()) {
                 locale = Locale.forLanguageTag(langTag);
             }
 
-            System.out.println("[TaskServiceImpl] user.getLanguage()=" + langTag + " → locale=" + locale);
-
             String dbMessage = messageSource.getMessage("notification.task.completed", new Object[]{ task.getText() }, locale);
-            System.out.println("[TaskServiceImpl] Mesaj DB = \"" + dbMessage + "\"");
             notificationService.createNotification(task.getUser(), dbMessage);
-
 
             String title = messageSource.getMessage("push.task.done.title", null, locale);
             String body = messageSource.getMessage("push.task.done.body", new Object[]{ task.getText() }, locale);
             String url = messageSource.getMessage("push.task.done.url", null, locale);
 
-            System.out.println("[TaskServiceImpl] push.title = \"" + title + "\"");
-            System.out.println("[TaskServiceImpl] push.body  = \"" + body + "\"");
-
             Map<String, String> data = Map.of("title", title, "body",  body, "url",   url);
             String payloadJson = new com.google.gson.Gson().toJson(data);
 
-            System.out.println("[TaskServiceImpl] payloadJson = " + payloadJson);
-
             try {
                 Long userId = task.getUser().getId();
-                System.out.println("[TaskServiceImpl] Trimitem push pentru DONE la userId=" + userId +
-                        " (locale=" + locale + ")");
+//                System.out.println("[TaskServiceImpl] Trimitem push pentru DONE la userId=" + userId +
+//                        " (locale=" + locale + ")");
                 webPushService.sendNotificationTo(userId, payloadJson);
             } catch (Exception e) {
                 System.err.println("[TaskServiceImpl] Eroare trimitere push DONE: " + e.getMessage());

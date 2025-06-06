@@ -66,19 +66,11 @@ public class WebPushService {
 
     public void sendNotificationTo(Long userId, String payloadJson) {
         List<PushSubscription> subs = subscriptionRepository.findAllByUserId(userId);
-        System.out.println(">>> sendNotificationTo() pentru userId=" + userId + "; subs count=" + subs.size());
 
         for (PushSubscription sub : subs) {
             try {
-                System.out.println("    -> endpoint = " + sub.getEndpoint());
-                System.out.println("       p256dh   = " + sub.getP256dh());
-                System.out.println("       auth     = " + sub.getAuth());
-
-                Notification notification = new Notification(
-                        sub.getEndpoint(),
-                        sub.getP256dh(),
-                        sub.getAuth(),
-                        payloadJson.getBytes(StandardCharsets.UTF_8)
+                Notification notification = new Notification(sub.getEndpoint(), sub.getP256dh(),
+                        sub.getAuth(), payloadJson.getBytes(StandardCharsets.UTF_8)
                 );
 
                 HttpRequest webRequest = pushService.prepareRequestPublic(notification);
@@ -92,7 +84,6 @@ public class WebPushService {
                             .orElse(cryptoHeader);
                     headers.put("Crypto-Key", onlyP256ecdsa);
                 }
-
 
                 HttpPost httpPost = new HttpPost(webRequest.getUrl());
                 for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -109,7 +100,6 @@ public class WebPushService {
                     String body = resp.getEntity() != null
                             ? new String(resp.getEntity().getContent().readAllBytes())
                             : "<fără body>";
-                    System.out.println("       !!!!!!!!!!!!==> BODY eroare: " + body);
                 }
 
             } catch (JoseException | GeneralSecurityException e) {
